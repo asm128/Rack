@@ -6,6 +6,7 @@ RACK_DIR ?= ..
 
 include $(RACK_DIR)/arch.mk
 
+ifneq ($(USE_SYSTEM_LIBS),true)
 ifdef ARCH_LIN
 	glew = lib/libGLEW.a
 	glfw = lib/libglfw3.a
@@ -48,27 +49,29 @@ ifdef ARCH_WIN
 	rtaudio = lib/librtaudio.a
 endif
 
+else
+
+ifdef ARCH_MAC
+	glfw = lib/libglfw3.a
+endif
+
+ifdef ARCH_WIN
+	glfw = lib/libglfw3.a
+endif
+
+endif
+
 nanovg = include/nanovg.h
 nanosvg = include/nanosvg.h
 oui-blendish = include/blendish.h
 osdialog = include/osdialog.h
 pffft = include/pffft.h
 
-DEPS += $(glew)
-DEPS += $(glfw)
-DEPS += $(jansson)
-DEPS += $(libcurl)
-DEPS += $(libzip)
-DEPS += $(libspeexdsp)
-DEPS += $(libsamplerate)
-DEPS += $(rtmidi)
-DEPS += $(rtaudio)
-DEPS += $(nanovg)
-DEPS += $(nanosvg)
-DEPS += $(oui-blendish)
-DEPS += $(osdialog)
-DEPS += $(pffft)
-
+ifneq ($(USE_SYSTEM_LIBS),true)
+DEPS += $(glew) $(glfw) $(jansson) $(libspeexdsp) $(libcurl) $(libzip) $(rtmidi) $(rtaudio) $(nanovg) $(nanosvg) $(oui-blendish) $(osdialog) $(pffft)
+else
+DEPS += $(nanovg) $(nanosvg) $(oui-blendish) $(osdialog) $(pffft)
+endif
 
 DEP_LOCAL := .
 include $(RACK_DIR)/dep.mk
@@ -76,6 +79,7 @@ include $(RACK_DIR)/dep.mk
 
 # Targets
 
+ifneq ($(USE_SYSTEM_LIBS),true)
 glew-2.1.0:
 	$(WGET) "https://github.com/nigels-com/glew/releases/download/glew-2.1.0/glew-2.1.0.tgz"
 	$(SHA256) glew-2.1.0.tgz 04de91e7e6763039bc11940095cd9c7f880baba82196a7765f727ac05a993c95
@@ -222,17 +226,31 @@ $(rtaudio): rtaudio
 	cd rtaudio/build && $(CMAKE) $(RTAUDIO_FLAGS) ..
 	$(MAKE) -C rtaudio/build
 	$(MAKE) -C rtaudio/build install
+else
+ifndef ARCH_LIN
+$(glfw): glfw
+	cd glfw && mkdir -p build
+	cd glfw/build && $(CMAKE) .. \
+		-DGLFW_BUILD_EXAMPLES=OFF -DGLFW_BUILD_TESTS=OFF -DGLFW_BUILD_DOCS=OFF
+	$(MAKE) -C glfw/build
+	$(MAKE) -C glfw/build install
+endif
+endif
 
 $(nanovg): $(wildcard nanovg/src/*.h) nanovg/example/stb_image_write.h
+	mkdir -p include
 	cp $^ include/
 
 $(nanosvg): $(wildcard nanosvg/src/*.h)
+	mkdir -p include
 	cp $^ include/
 
 $(oui-blendish): $(wildcard oui-blendish/*.h)
+	mkdir -p include
 	cp $^ include/
 
 $(osdialog): $(wildcard osdialog/*.h)
+	mkdir -p include
 	cp $^ include/
 
 jpommier-pffft-29e4f76ac53b:
@@ -242,11 +260,18 @@ jpommier-pffft-29e4f76ac53b:
 	rm 29e4f76ac53b.zip
 
 $(pffft): jpommier-pffft-29e4f76ac53b
+	mkdir -p include
 	cp jpommier-pffft-29e4f76ac53b/*.h include/
 
 # Helpers
 
-src: glew-2.1.0 glfw jansson-2.12 speexdsp-SpeexDSP-1.2rc3 openssl-1.1.1d curl-7.66.0 libzip-1.5.2 zlib-1.2.11 rtmidi-4.0.0 rtaudio nanovg nanosvg oui-blendish osdialog jpommier-pffft-29e4f76ac53b
+ifneq ($(USE_SYSTEM_LIBS),true)
+SRC = glew-2.1.0 glfw jansson-2.12 speexdsp-SpeexDSP-1.2rc3 openssl-1.1.1b curl-7.66.0 libzip-1.5.2 zlib-1.2.11 rtmidi-4.0.0 rtaudio nanovg nanosvg oui-blendish osdialog jpommier-pffft-29e4f76ac53b
+else
+SRC = nanovg nanosvg oui-blendish osdialog jpommier-pffft-29e4f76ac53b
+endif
+
+src: $(SRC)
 
 clean:
 	git clean -fdx

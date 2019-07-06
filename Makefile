@@ -1,6 +1,9 @@
 RACK_DIR ?= .
-# VERSION := 1.dev.$(shell git rev-parse --short HEAD)
 VERSION := 1.1.6
+
+ifeq ($(strip $(VERSION)),)
+VERSION := 1.dev.$(shell git rev-parse --short HEAD)
+endif
 
 FLAGS += -DVERSION=$(VERSION)
 FLAGS += -Iinclude -Idep/include
@@ -20,10 +23,16 @@ ifdef ARCH_LIN
 	SOURCES += dep/osdialog/osdialog_gtk2.c
 build/dep/osdialog/osdialog_gtk2.c.o: FLAGS += $(shell pkg-config --cflags gtk+-2.0)
 
+ifneq ($(USE_SYSTEM_LIBS),true)
 	LDFLAGS += -rdynamic \
 		dep/lib/libGLEW.a dep/lib/libglfw3.a dep/lib/libjansson.a dep/lib/libcurl.a dep/lib/libssl.a dep/lib/libcrypto.a dep/lib/libzip.a dep/lib/libz.a dep/lib/libspeexdsp.a dep/lib/libsamplerate.a dep/lib/librtmidi.a dep/lib/librtaudio.a \
 		-lpthread -lGL -ldl -lX11 -lasound -ljack \
 		$(shell pkg-config --libs gtk+-2.0)
+else
+	LDFLAGS += -rdynamic \
+		-lpthread -ldl \
+		$(shell pkg-config --libs alsa glew glfw3 gtk+-2.0 jack jansson libcurl libzip zlib openssl rtaudio rtmidi speexdsp x11)
+endif
 	TARGET := Rack
 endif
 

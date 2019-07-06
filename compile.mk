@@ -18,6 +18,10 @@ FLAGS += -Wall -Wextra -Wno-unused-parameter
 # C++ standard
 CXXFLAGS += -std=c++11
 
+ifeq ($(USE_SYSTEM_LIBS),true)
+FLAGS += $(shell pkg-config --cflags glew jansson libcurl libzip openssl rtaudio rtmidi speexdsp)
+endif
+
 # Architecture-independent flags
 ifdef ARCH_LIN
 	FLAGS += -DARCH_LIN

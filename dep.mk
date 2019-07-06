@@ -7,6 +7,10 @@ DEP_PATH := $(abspath $(DEP_LOCAL))
 
 DEP_FLAGS += -g -O3 -march=nocona
 
+ifeq ($(USE_SYSTEM_LIBS),true)
+DEP_FLAGS += $(shell pkg-config --cflags glew glfw3 jansson libcurl libzip openssl rtaudio rtmidi speexdsp)
+endif
+
 ifeq ($(ARCH), mac)
 	DEP_MAC_SDK_FLAGS := -mmacosx-version-min=10.7
 	DEP_FLAGS += $(DEP_MAC_SDK_FLAGS) -stdlib=libc++
